@@ -4,7 +4,7 @@ A production-style ML pipeline built in a 3-day intensive sprint, covering Docke
 
 ## What It Does
 
-A FastAPI app that serves predictions from a scikit-learn iris flower classifier. The infrastructure demonstrates real MLOps practices: containerization, orchestration, cloud storage, database logging, and automated deployments.
+A FastAPI app that serves predictions from a scikit-learn iris flower classifier. The infrastructure demonstrates real MLOps practices: containerization, orchestration, cloud storage, database logging, automated deployments, and infrastructure as code.
 
 ## Architecture
 
@@ -21,9 +21,9 @@ A FastAPI app that serves predictions from a scikit-learn iris flower classifier
                            │  (logging)  │   │  (JSON logs)  │  │  (image repo) │
                            └─────────────┘   └───────────────┘  └───────────────┘
 
-Deployed on: Kubernetes (minikube locally) → AWS EKS (production)
-Provisioned with: Terraform
-CI/CD: GitHub Actions
+CI/CD:     GitHub Actions → build → test → push to ECR → update K8s manifest
+IaC:       Terraform provisions S3 + ECR
+Deployed:  Kubernetes (minikube locally)
 ```
 
 ## Tech Stack
@@ -34,15 +34,16 @@ CI/CD: GitHub Actions
 | API | FastAPI + uvicorn |
 | Containerization | Docker |
 | Orchestration | Kubernetes (minikube) |
-| Container Registry | Docker Hub + AWS ECR |
+| Container Registry | AWS ECR |
 | Cloud Storage | AWS S3 |
 | Database | Postgres |
+| Analytics | DuckDB (queries S3 logs with SQL) |
 | IaC | Terraform |
 | CI/CD | GitHub Actions |
 
 ## How to Run Locally
 
-**Prerequisites:** Docker, minikube, kubectl
+**Prerequisites:** Docker, minikube, kubectl, AWS CLI configured
 
 ```bash
 # Clone the repo
@@ -62,22 +63,33 @@ curl -X POST http://localhost:8000/predict \
 ## Deploy to Kubernetes
 
 ```bash
-# Start minikube
 minikube start
-
-# Deploy
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
-
-# Get the URL
 minikube service mlops-sprint --url
+```
 
-# Scale to 3 replicas
-kubectl scale deployment mlops-sprint --replicas=3
+## CI/CD Pipeline
 
-# Rolling update to new version
-kubectl set image deployment/mlops-sprint mlops-sprint=ravalikotha/mlops-sprint:v2
-kubectl rollout status deployment/mlops-sprint
+Every push to `main` automatically:
+1. Runs pytest tests
+2. Builds Docker image tagged with git commit SHA
+3. Pushes image to AWS ECR
+4. Updates `k8s/deployment.yaml` with the new image tag (GitOps)
+
+## Infrastructure as Code
+
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply   # provisions S3 bucket + ECR repository
+```
+
+## Query Prediction Logs with DuckDB
+
+```bash
+python3 query_s3.py   # runs SQL directly against S3 JSON files
 ```
 
 ## Project Structure
@@ -85,19 +97,25 @@ kubectl rollout status deployment/mlops-sprint
 ```
 mlops-sprint/
 ├── app/
-│   ├── main.py        # FastAPI app + prediction endpoint
-│   ├── train.py       # Model training script
-│   └── model.pkl      # Trained scikit-learn model
+│   ├── main.py          # FastAPI app — logs to Postgres + S3
+│   ├── train.py         # Model training script
+│   └── model.pkl        # Trained scikit-learn model
 ├── k8s/
-│   ├── deployment.yaml  # Kubernetes Deployment
+│   ├── deployment.yaml  # Kubernetes Deployment (auto-updated by CI/CD)
 │   └── service.yaml     # Kubernetes Service
+├── terraform/
+│   └── main.tf          # S3 + ECR provisioning
+├── tests/
+│   └── test_app.py      # pytest tests
+├── .github/workflows/
+│   └── ci.yml           # GitHub Actions CI/CD pipeline
+├── query_s3.py          # DuckDB S3 query script
 ├── Dockerfile           # Multi-stage Docker build
-├── requirements.txt     # Python dependencies
-└── README.md
+└── requirements.txt
 ```
 
 ## Day-by-Day Progress
 
-- **Day 1** ✅ Docker + Kubernetes — containerized app deployed to minikube
-- **Day 2** 🔄 AWS + Postgres — ECR, S3 logging, database integration
-- **Day 3** 🔄 CI/CD + Terraform — automated pipelines, infrastructure as code
+- **Day 1** ✅ Docker + Kubernetes — containerized app deployed to minikube with rolling updates
+- **Day 2** ✅ AWS + Postgres — ECR, S3 logging, Postgres integration, K8s secrets
+- **Day 3** ✅ CI/CD + Terraform — automated pipeline, infrastructure as code
