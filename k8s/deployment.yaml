@@ -16,7 +16,7 @@ spec:
         - name: ecr-secret
       containers:
         - name: mlops-sprint
-          image: 149614785185.dkr.ecr.us-east-1.amazonaws.com/mlops-sprint:v3
+          image: 149614785185.dkr.ecr.us-east-1.amazonaws.com/mlops-sprint:c0adf6a7af02758692c152a6994cae6c85651cb9
           ports:
             - containerPort: 8000
           env:
