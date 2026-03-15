@@ -35,6 +35,23 @@ resource "aws_ecr_repository" "mlops_sprint" {
   }
 }
 
+# ECR repository for MLflow custom image
+resource "aws_ecr_repository" "mlflow" {
+  name                 = "mlflow"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Project = "mlops-sprint"
+  }
+}
+
+# S3 bucket path for MLflow artifacts (same bucket, different prefix)
+# mlops-sprint-ravali/mlflow-artifacts/
+
 # Outputs — printed after terraform apply
 output "s3_bucket_name" {
   value = aws_s3_bucket.predictions.bucket

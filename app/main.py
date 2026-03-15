@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-import pickle
 import numpy as np
 import boto3
 import json
@@ -8,18 +7,31 @@ import uuid
 import os
 from datetime import datetime, timezone
 from sqlalchemy import create_engine, text
+import mlflow.sklearn
 
 app = FastAPI(title="Iris Classifier")
-
-with open("model.pkl", "rb") as f:
-    model = pickle.load(f)
 
 CLASSES = ["setosa", "versicolor", "virginica"]
 S3_BUCKET = "mlops-sprint-ravali"
 s3 = boto3.client("s3")
 
-# Postgres connection — reads from environment variable (injected via K8s secret)
-DB_URL = os.getenv("DB_URL", "postgresql://postgres:mlopspass@localhost:5432/mlops")
+# Load model from MLflow registry — falls back to local model.pkl if MLflow unavailable
+MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+mlflow.set_tracking_uri(MLFLOW_URI)
+
+try:
+    model = mlflow.sklearn.load_model("models:/iris-classifier@production")
+    model_version = "mlflow-production"
+    print(f"Loaded model from MLflow registry")
+except Exception as e:
+    print(f"MLflow unavailable ({e}), falling back to local model.pkl")
+    import pickle
+    with open("model.pkl", "rb") as f:
+        model = pickle.load(f)
+    model_version = "local-pkl"
+
+# Postgres connection
+DB_URL = os.getenv("DB_URL", "postgresql://postgres:mlopspass@host.minikube.internal:5432/mlops")
 engine = create_engine(DB_URL)
 
 # Create predictions table on startup
@@ -43,7 +55,7 @@ class PredictRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "model_version": model_version}
 
 @app.post("/predict")
 def predict(req: PredictRequest):
@@ -54,7 +66,7 @@ def predict(req: PredictRequest):
     result = {
         "prediction": CLASSES[prediction],
         "confidence": round(float(probability), 4),
-        "model_version": "v2"
+        "model_version": model_version
     }
 
     timestamp = datetime.now(timezone.utc)
@@ -69,7 +81,7 @@ def predict(req: PredictRequest):
             "id": prediction_id,
             "input": json.dumps(req.model_dump()),
             "output": json.dumps(result),
-            "model_version": "v2",
+            "model_version": model_version,
             "timestamp": timestamp
         })
         conn.commit()
