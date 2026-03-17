@@ -1,6 +1,6 @@
-# MLOps Sprint — End-to-End ML Platform
+# ML Platform — End-to-End MLOps Infrastructure
 
-A production-style ML platform built in a hands-on sprint, covering Docker, Kubernetes, AWS, Postgres, CI/CD, Terraform, and MLflow.
+A production-style ML platform covering Docker, Kubernetes, AWS, Postgres, CI/CD, Terraform, MLflow, and JupyterHub.
 
 ## What It Does
 
@@ -17,7 +17,7 @@ A FastAPI app serving predictions from a scikit-learn iris classifier, backed by
 ```
 Data Scientist
     │
-    │  runs train.py from notebook
+    │  logs into JupyterHub → runs training notebook
     ▼
 MLflow Tracking Server (Kubernetes)
     ├── logs metrics/params → Postgres
@@ -51,6 +51,7 @@ Infrastructure (Terraform)
 | Cloud Storage | AWS S3 |
 | Database | Postgres |
 | Analytics | DuckDB (SQL queries on S3 logs) |
+| Notebook Environment | JupyterHub |
 | IaC | Terraform |
 | CI/CD | GitHub Actions |
 
@@ -156,9 +157,13 @@ mlops-sprint/
 ├── k8s/
 │   ├── deployment.yaml  # App deployment (auto-updated by CI/CD)
 │   ├── service.yaml     # App service
-│   └── mlflow/
-│       ├── deployment.yaml  # MLflow server deployment
-│       └── service.yaml     # MLflow service
+│   ├── mlflow/
+│   │   ├── deployment.yaml  # MLflow server deployment
+│   │   └── service.yaml     # MLflow service
+│   └── jupyterhub/
+│       └── values.yaml      # JupyterHub Helm configuration
+├── notebooks/
+│   └── iris_training.ipynb  # Data scientist training notebook
 ├── terraform/
 │   └── main.tf          # S3 + ECR provisioning
 ├── tests/
@@ -179,9 +184,3 @@ mlops-sprint/
 - **Mock vs integration tests** — mocking the DB in tests hid a real connection bug; integration tests against a real DB would have caught it
 - **MLflow aliases vs stages** — MLflow v2.9+ uses aliases (e.g. `@production`) instead of deprecated stages
 
-## Day-by-Day Progress
-
-- **Day 1** ✅ Docker + Kubernetes — containerized app, minikube deployment, rolling updates
-- **Day 2** ✅ AWS + Postgres — ECR, S3 logging, Postgres integration, K8s secrets
-- **Day 3** ✅ CI/CD + Terraform — GitHub Actions pipeline, infrastructure as code
-- **Bonus** ✅ MLflow — experiment tracking, model registry, platform thinking
