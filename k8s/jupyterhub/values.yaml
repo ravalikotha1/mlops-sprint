@@ -1,0 +1,49 @@
+hub:
+  config:
+    JupyterHub:
+      admin_access: true
+    Authenticator:
+      allowed_users:
+        - ravali
+        - datascientist1
+        - datascientist2
+      admin_users:
+        - ravali
+    DummyAuthenticator:
+      password: "mlops1234"
+
+singleuser:
+  # Docker image for each user's notebook server
+  image:
+    name: jupyter/scipy-notebook
+    tag: latest
+  # Resource limits per user pod
+  memory:
+    limit: 1G
+    guarantee: 512M
+  cpu:
+    limit: 1
+    guarantee: 0.5
+  # Environment variables injected into every notebook
+  # Points notebooks at your MLflow server automatically
+  extraEnv:
+    MLFLOW_TRACKING_URI: "http://mlflow.default.svc.cluster.local:5000"
+    AWS_DEFAULT_REGION: "us-east-1"
+    AWS_ACCESS_KEY_ID:
+      valueFrom:
+        secretKeyRef:
+          name: aws-secret-env
+          key: AWS_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY:
+      valueFrom:
+        secretKeyRef:
+          name: aws-secret-env
+          key: AWS_SECRET_ACCESS_KEY
+
+
+
+# Disable authentication for local development
+# In production you'd use OAuth/SSO
+proxy:
+  service:
+    type: NodePort
