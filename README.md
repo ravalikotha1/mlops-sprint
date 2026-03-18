@@ -176,11 +176,22 @@ mlops-sprint/
 └── requirements.txt
 ```
 
-## Key Learnings
+## Key Engineering Decisions & Learnings
 
-- **localhost vs host.minikube.internal** — pods can't reach the host machine via localhost; use `host.minikube.internal` instead
-- **ECR token expiry** — AWS ECR tokens expire every 12 hours; on EKS this is solved with IAM roles
-- **GitOps discipline** — never manually edit the image tag in deployment.yaml; let CI/CD own it
-- **Mock vs integration tests** — mocking the DB in tests hid a real connection bug; integration tests against a real DB would have caught it
-- **MLflow aliases vs stages** — MLflow v2.9+ uses aliases (e.g. `@production`) instead of deprecated stages
+**Networking**
+- Pods can't reach the host machine via `localhost` — use `host.minikube.internal` instead; on EKS this is handled via VPC routing
+- Cross-namespace communication requires full DNS: `service.namespace.svc.cluster.local` — learned this when JupyterHub couldn't resolve the MLflow service
+
+**Security**
+- AWS ECR tokens expire every 12 hours — recreate `imagePullSecrets` when pods show `ImagePullBackOff`; on EKS this is eliminated with IAM roles for service accounts
+- Credentials are injected via Kubernetes Secrets, never hardcoded in manifests or application code
+
+**CI/CD & GitOps**
+- The CI/CD pipeline owns the image tag in `deployment.yaml` — manually editing it causes merge conflicts; let automation handle it
+- Mocking the database in tests hid a real connection bug — integration tests against a real database would have caught it earlier
+
+**MLflow**
+- MLflow server stores metadata (metrics, params) in Postgres; the client writes model artifacts directly to S3 — the server just provides the artifact location
+- MLflow v2.9+ uses aliases (e.g. `@production`) instead of deprecated stages
+- Version mismatch between MLflow client and server causes API errors — always pin client version to match server
 
