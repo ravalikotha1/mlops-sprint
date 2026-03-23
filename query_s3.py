@@ -4,6 +4,7 @@ import boto3
 session = boto3.Session()
 creds = session.get_credentials().get_frozen_credentials()
 
+# In-memory DuckDB connection - no local database file needed
 conn = duckdb.connect()
 conn.execute(f"""
     SET s3_region='us-east-1';

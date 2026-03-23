@@ -22,7 +22,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     iris.data, iris.target, test_size=0.2, random_state=42
 )
 
-# Hyperparameters — change these to compare runs in MLflow UI
+# Tweak these to compare runs in MLflow
 params = {
     "n_estimators": 100,
     "max_depth": 5,

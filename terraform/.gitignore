@@ -1,4 +1,4 @@
-# Terraform state files — never commit these (contain sensitive data)
+# Terraform state files - never commit these (contain sensitive data)
 *.tfstate
 *.tfstate.backup
 .terraform/

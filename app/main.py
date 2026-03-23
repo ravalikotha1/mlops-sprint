@@ -15,7 +15,7 @@ CLASSES = ["setosa", "versicolor", "virginica"]
 S3_BUCKET = "mlops-sprint-ravali"
 s3 = boto3.client("s3")
 
-# Load model from MLflow registry — falls back to local model.pkl if MLflow unavailable
+# Try loading from MLflow registry, fall back to local model.pkl if unavailable
 MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 mlflow.set_tracking_uri(MLFLOW_URI)
 

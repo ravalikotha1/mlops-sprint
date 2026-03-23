@@ -1,6 +1,6 @@
-# ML Platform — End-to-End MLOps Infrastructure
+# ML Platform: End-to-End MLOps Infrastructure
 
-A production-style ML platform covering Docker, Kubernetes, AWS, Postgres, CI/CD, Terraform, MLflow, and JupyterHub.
+A ML platform covering Docker, Kubernetes, AWS, Postgres, CI/CD, Terraform, MLflow, and JupyterHub.
 
 ## What It Does
 
@@ -151,8 +151,8 @@ python3 query_s3.py   # SQL queries directly against S3 JSON files
 ```
 mlops-sprint/
 ├── app/
-│   ├── main.py          # FastAPI app — loads model from MLflow, logs to Postgres + S3
-│   ├── train.py         # Training script — logs experiments to MLflow
+│   ├── main.py          # FastAPI app: loads model from MLflow, logs to Postgres + S3
+│   ├── train.py         # Training script: logs experiments to MLflow
 │   └── model.pkl        # Local model fallback
 ├── k8s/
 │   ├── deployment.yaml  # App deployment (auto-updated by CI/CD)
@@ -176,22 +176,21 @@ mlops-sprint/
 └── requirements.txt
 ```
 
-## Key Engineering Decisions & Learnings
+## Key Learnings
 
 **Networking**
-- Pods can't reach the host machine via `localhost` — use `host.minikube.internal` instead; on EKS this is handled via VPC routing
-- Cross-namespace communication requires full DNS: `service.namespace.svc.cluster.local` — learned this when JupyterHub couldn't resolve the MLflow service
+- Pods can't reach the host machine via `localhost`; use `host.minikube.internal` instead. On EKS this is handled via VPC routing
+- Cross-namespace communication requires full DNS: `service.namespace.svc.cluster.local` (ran into this when JupyterHub couldn't resolve the MLflow service)
 
 **Security**
-- AWS ECR tokens expire every 12 hours — recreate `imagePullSecrets` when pods show `ImagePullBackOff`; on EKS this is eliminated with IAM roles for service accounts
-- Credentials are injected via Kubernetes Secrets, never hardcoded in manifests or application code
+- AWS ECR tokens expire every 12 hours; recreate `imagePullSecrets` when pods show `ImagePullBackOff`. On EKS this is handled with IAM roles for service accounts
+- Credentials are injected via Kubernetes Secrets
 
 **CI/CD & GitOps**
-- The CI/CD pipeline owns the image tag in `deployment.yaml` — manually editing it causes merge conflicts; let automation handle it
-- Mocking the database in tests hid a real connection bug — integration tests against a real database would have caught it earlier
+- The CI/CD pipeline owns the image tag in `deployment.yaml`; manually editing it causes merge conflicts
+- Mocking the database in tests hid a real connection bug; integration tests against a real database would have caught it earlier
 
 **MLflow**
-- MLflow server stores metadata (metrics, params) in Postgres; the client writes model artifacts directly to S3 — the server just provides the artifact location
-- MLflow v2.9+ uses aliases (e.g. `@production`) instead of deprecated stages
-- Version mismatch between MLflow client and server causes API errors — always pin client version to match server
+- MLflow v2.9+ uses aliases (e.g. `@production`) instead of stages (deprecated)
+- Version mismatch between MLflow client and server causes API errors; always pin the client version to match the server
 

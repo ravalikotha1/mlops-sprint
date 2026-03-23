@@ -7,7 +7,7 @@ terraform {
   }
 }
 
-# Configure the AWS provider — reads credentials from your ~/.aws/credentials
+# Reads credentials from ~/.aws/credentials
 provider "aws" {
   region = "us-east-1"
 }
@@ -52,7 +52,7 @@ resource "aws_ecr_repository" "mlflow" {
 # S3 bucket path for MLflow artifacts (same bucket, different prefix)
 # mlops-sprint-ravali/mlflow-artifacts/
 
-# Outputs — printed after terraform apply
+# Print key resource identifiers after apply
 output "s3_bucket_name" {
   value = aws_s3_bucket.predictions.bucket
 }

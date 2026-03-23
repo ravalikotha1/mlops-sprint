@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Final image
-# Start fresh with a clean slim image — keeps the final image small
+# Start fresh with a clean slim image to keep the final image small
 FROM python:3.11-slim
 
 WORKDIR /app
